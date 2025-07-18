@@ -2,11 +2,12 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Scanner QR Card con Debug</title>
+  <title>QR Scanner con Livello e Suoni</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     #reader { width: 320px; margin: 20px auto; }
-    #result { margin-top: 20px; font-size: 18px; text-align: center; min-height: 24px; }
+    #result { margin-top: 20px; font-size: 18px; text-align: center; min-height: 40px; }
+    #level-msg { font-weight: bold; margin-top: 10px; text-align: center; color: #2a7ae2; }
     #go-btn {
       display: none;
       margin: 20px auto;
@@ -27,7 +28,13 @@
   <h2 style="text-align:center">Scansiona il tuo QR Code</h2>
 
   <div id="reader"></div>
+
+  <div style="text-align:center; margin-top: 10px;">
+    <input type="file" id="file-selector" accept="image/*" />
+  </div>
+
   <div id="result">In attesa della scansione...</div>
+  <div id="level-msg"></div>
 
   <button id="go-btn" onclick="window.open('https://sites.google.com/view/registroddd', '_blank')">
     Vai al Registro DDD
@@ -44,49 +51,88 @@
     ];
 
     const resultEl = document.getElementById('result');
+    const levelMsgEl = document.getElementById('level-msg');
     const btnEl = document.getElementById('go-btn');
     const beepSound = document.getElementById('beep-sound');
     const errorSound = document.getElementById('error-sound');
 
     let lastValid = false;
 
-    function onScanSuccess(decodedText, decodedResult) {
-      console.log("Scansionato:", decodedText);
-      const trimmedText = decodedText.trim();
-      resultEl.textContent = "Contenuto QR: " + trimmedText;
+    // Estrae il livello dal testo del QR code
+    function extractLevel(text) {
+      // esempio: "Card LEVEL : _3_ 66250 DDD check"
+      // vogliamo estrarre il numero dopo _
+      const match = text.match(/Card LEVEL : _(\d+)_/);
+      return match ? match[1] : null;
+    }
 
-      if (validStrings.includes(trimmedText)) {
-        if (!lastValid) {
-          console.log("QR valido!");
-          beepSound.play();
-          btnEl.style.display = "block";
-          lastValid = true;
-        }
+    function handleValidScan(text) {
+      if (!lastValid) {
+        beepSound.play();
+        btnEl.style.display = "block";
+        lastValid = true;
+      }
+      resultEl.textContent = "Contenuto QR: " + text;
+      const level = extractLevel(text);
+      if (level) {
+        levelMsgEl.textContent = `Card LEVEL "${level}"`;
       } else {
-        if (lastValid) {
-          console.log("QR non valido.");
-          errorSound.play();
-          btnEl.style.display = "none";
-          lastValid = false;
-        }
+        levelMsgEl.textContent = "";
       }
     }
 
-    function onScanFailure(error) {
-      // Opzionale: mostrare errori di scansione
-      // console.warn(`Scan failed: ${error}`);
+    function handleInvalidScan(text) {
+      if (lastValid) {
+        errorSound.play();
+        btnEl.style.display = "none";
+        lastValid = false;
+      }
+      resultEl.textContent = "Contenuto QR non valido: " + text;
+      levelMsgEl.textContent = "";
     }
 
-    const html5QrCode = new Html5Qrcode("reader");
+    function processScanResult(decodedText) {
+      const trimmedText = decodedText.trim();
+      if (validStrings.includes(trimmedText)) {
+        handleValidScan(trimmedText);
+      } else {
+        handleInvalidScan(trimmedText);
+      }
+    }
 
+    // Scanner con fotocamera
+    const html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: 280 },
-      onScanSuccess,
-      onScanFailure
+      (decodedText, decodedResult) => {
+        processScanResult(decodedText);
+      },
+      errorMessage => {
+        // console.log("Scan error", errorMessage);
+      }
     ).catch(err => {
-      console.error("Errore avvio scanner:", err);
       resultEl.textContent = "Errore avvio scanner: " + err;
+    });
+
+    // Caricamento file
+    const fileSelector = document.getElementById('file-selector');
+    fileSelector.addEventListener('change', e => {
+      if (e.target.files.length == 0) {
+        return;
+      }
+      const file = e.target.files[0];
+      html5QrCode.scanFile(file, true)
+        .then(decodedText => {
+          processScanResult(decodedText);
+        })
+        .catch(err => {
+          errorSound.play();
+          resultEl.textContent = "Errore nella lettura del file QR: " + err;
+          btnEl.style.display = "none";
+          levelMsgEl.textContent = "";
+          lastValid = false;
+        });
     });
   </script>
 </body>
