@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>Scanner QR Card con Suoni</title>
+  <title>Scanner QR Card con Debug</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     #reader { width: 320px; margin: 20px auto; }
@@ -48,20 +48,23 @@
     const beepSound = document.getElementById('beep-sound');
     const errorSound = document.getElementById('error-sound');
 
-    let lastValid = false;  // per evitare suoni ripetuti
+    let lastValid = false;
 
     function onScanSuccess(decodedText, decodedResult) {
+      console.log("Scansionato:", decodedText);
       const trimmedText = decodedText.trim();
       resultEl.textContent = "Contenuto QR: " + trimmedText;
 
       if (validStrings.includes(trimmedText)) {
         if (!lastValid) {
+          console.log("QR valido!");
           beepSound.play();
           btnEl.style.display = "block";
           lastValid = true;
         }
       } else {
         if (lastValid) {
+          console.log("QR non valido.");
           errorSound.play();
           btnEl.style.display = "none";
           lastValid = false;
@@ -69,14 +72,21 @@
       }
     }
 
+    function onScanFailure(error) {
+      // Opzionale: mostrare errori di scansione
+      // console.warn(`Scan failed: ${error}`);
+    }
+
     const html5QrCode = new Html5Qrcode("reader");
 
     html5QrCode.start(
       { facingMode: "environment" },
       { fps: 10, qrbox: 280 },
-      onScanSuccess
+      onScanSuccess,
+      onScanFailure
     ).catch(err => {
-      resultEl.textContent = "Errore: " + err;
+      console.error("Errore avvio scanner:", err);
+      resultEl.textContent = "Errore avvio scanner: " + err;
     });
   </script>
 </body>
