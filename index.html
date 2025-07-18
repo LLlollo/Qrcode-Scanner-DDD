@@ -2,14 +2,13 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>QR Scanner con Livello e Suoni</title>
+  <title>QR Scanner con Pulsante Disabilitato</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     #reader { width: 320px; margin: 20px auto; }
     #result { margin-top: 20px; font-size: 18px; text-align: center; min-height: 40px; }
     #level-msg { font-weight: bold; margin-top: 10px; text-align: center; color: #2a7ae2; }
     #go-btn {
-      display: none;
       margin: 20px auto;
       padding: 12px 24px;
       font-size: 16px;
@@ -21,6 +20,12 @@
       display: block;
       width: 200px;
       text-align: center;
+      opacity: 0.5;
+      pointer-events: none; /* disabilitato */
+    }
+    #go-btn.enabled {
+      opacity: 1;
+      pointer-events: auto; /* abilitato */
     }
   </style>
 </head>
@@ -40,8 +45,8 @@
     Vai al Registro DDD
   </button>
 
-  <audio id="beep-sound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-  <audio id="error-sound" src="https://actions.google.com/sounds/v1/cartoon/metal_thud_and_wobble.ogg"></audio>
+  <audio id="beep-sound" src="https://actions.google.com/sounds/v1/ui/click.ogg"></audio>
+<audio id="error-sound" src="https://actions.google.com/sounds/v1/cartoon/metal_thud_and_wobble.ogg"></audio>
 
   <script>
     const validStrings = [
@@ -58,21 +63,26 @@
 
     let lastValid = false;
 
-    // Estrae il livello dal testo del QR code
     function extractLevel(text) {
-      // esempio: "Card LEVEL : _3_ 66250 DDD check"
-      // vogliamo estrarre il numero dopo _
       const match = text.match(/Card LEVEL : _(\d+)_/);
       return match ? match[1] : null;
+    }
+
+    function enableButton() {
+      btnEl.classList.add('enabled');
+    }
+
+    function disableButton() {
+      btnEl.classList.remove('enabled');
     }
 
     function handleValidScan(text) {
       if (!lastValid) {
         beepSound.play();
-        btnEl.style.display = "block";
+        enableButton();
         lastValid = true;
       }
-      resultEl.textContent = "Contenuto QR: " + text;
+      resultEl.textContent = "QR valido!";
       const level = extractLevel(text);
       if (level) {
         levelMsgEl.textContent = `Card LEVEL "${level}"`;
@@ -84,10 +94,10 @@
     function handleInvalidScan(text) {
       if (lastValid) {
         errorSound.play();
-        btnEl.style.display = "none";
+        disableButton();
         lastValid = false;
       }
-      resultEl.textContent = "Contenuto QR non valido: " + text;
+      resultEl.textContent = "In attesa della scansione...";
       levelMsgEl.textContent = "";
     }
 
@@ -100,7 +110,6 @@
       }
     }
 
-    // Scanner con fotocamera
     const html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
       { facingMode: "environment" },
@@ -109,13 +118,12 @@
         processScanResult(decodedText);
       },
       errorMessage => {
-        // console.log("Scan error", errorMessage);
+        // Ignora errori di scansione continui
       }
     ).catch(err => {
       resultEl.textContent = "Errore avvio scanner: " + err;
     });
 
-    // Caricamento file
     const fileSelector = document.getElementById('file-selector');
     fileSelector.addEventListener('change', e => {
       if (e.target.files.length == 0) {
@@ -128,12 +136,15 @@
         })
         .catch(err => {
           errorSound.play();
-          resultEl.textContent = "Errore nella lettura del file QR: " + err;
-          btnEl.style.display = "none";
+          resultEl.textContent = "Errore nella lettura del file QR";
+          disableButton();
           levelMsgEl.textContent = "";
           lastValid = false;
         });
     });
+
+    // All'avvio disabilita il pulsante
+    disableButton();
   </script>
 </body>
 </html>
