@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Scanner QR Card</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
@@ -25,18 +25,22 @@
   <h2 style="text-align:center">Scansiona il tuo QR Code</h2>
   <div id="reader"></div>
   <div id="result">In attesa della scansione...</div>
-  <button id="go-btn" onclick="window.location.href='https://sites.google.com/view/registrodd'">
+  <button id="go-btn" onclick="window.location.href='https://sites.google.com/view/registroddd'">
     Vai al Registro DDD
   </button>
 
   <script>
-    const targetString = "Card LEVEL : _3_ 66250 DDD check";
+    const validStrings = [
+      "Card LEVEL : _3_ 66250 DDD check",
+      "Card LEVEL : _4_ 66250 DDD check",
+      "Card LEVEL : _5_ 66250 DDD check"
+    ];
     const resultEl = document.getElementById('result');
     const btnEl = document.getElementById('go-btn');
 
     function onScanSuccess(decodedText, decodedResult) {
       resultEl.textContent = "Contenuto QR: " + decodedText;
-      if (decodedText.trim() === targetString) {
+      if (validStrings.includes(decodedText.trim())) {
         btnEl.style.display = "block";
       } else {
         btnEl.style.display = "none";
@@ -45,11 +49,8 @@
 
     const html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start(
-      { facingMode: "environment" }, // fotocamera posteriore
-      {
-        fps: 10,
-        qrbox: 250
-      },
+      { facingMode: "environment" }, // usa fotocamera posteriore
+      { fps: 10, qrbox: 250 },
       onScanSuccess
     ).catch(err => {
       resultEl.textContent = "Errore: " + err;
