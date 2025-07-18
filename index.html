@@ -5,27 +5,31 @@
   <title>Scanner QR Card con Suoni</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    #reader { width: 300px; margin: 0 auto; }
+    #reader { width: 320px; margin: 20px auto; }
     #result { margin-top: 20px; font-size: 18px; text-align: center; min-height: 24px; }
     #go-btn {
       display: none;
       margin: 20px auto;
-      padding: 10px 20px;
+      padding: 12px 24px;
       font-size: 16px;
       background-color: #4285f4;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
       display: block;
+      width: 200px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
   <h2 style="text-align:center">Scansiona il tuo QR Code</h2>
+
   <div id="reader"></div>
   <div id="result">In attesa della scansione...</div>
-  <button id="go-btn" onclick="window.location.href='https://sites.google.com/view/registroddd'">
+
+  <button id="go-btn" onclick="window.open('https://sites.google.com/view/registroddd', '_blank')">
     Vai al Registro DDD
   </button>
 
@@ -44,27 +48,32 @@
     const beepSound = document.getElementById('beep-sound');
     const errorSound = document.getElementById('error-sound');
 
+    let lastValid = false;  // per evitare suoni ripetuti
+
     function onScanSuccess(decodedText, decodedResult) {
       const trimmedText = decodedText.trim();
       resultEl.textContent = "Contenuto QR: " + trimmedText;
 
       if (validStrings.includes(trimmedText)) {
-        if (btnEl.style.display === "none") {
+        if (!lastValid) {
           beepSound.play();
+          btnEl.style.display = "block";
+          lastValid = true;
         }
-        btnEl.style.display = "block";
       } else {
-        if (btnEl.style.display === "block") {
+        if (lastValid) {
           errorSound.play();
+          btnEl.style.display = "none";
+          lastValid = false;
         }
-        btnEl.style.display = "none";
       }
     }
 
     const html5QrCode = new Html5Qrcode("reader");
+
     html5QrCode.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
+      { fps: 10, qrbox: 280 },
       onScanSuccess
     ).catch(err => {
       resultEl.textContent = "Errore: " + err;
@@ -72,4 +81,3 @@
   </script>
 </body>
 </html>
-
